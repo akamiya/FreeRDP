@@ -140,6 +140,12 @@ void xf_keyboard_key_press(xfContext* xfc, BYTE keycode, KeySym keysym)
 	if (keycode < 8)
 		return;
 
+	// handle modmapped right control
+	if (keysym == XK_Control_R)
+	{
+		keycode = XKeysymToKeycode(xfc->display, keysym);
+	}
+
 	xfc->KeyboardState[keycode] = TRUE;
 
 	if (xf_keyboard_handle_special_keys(xfc, keysym))
@@ -152,6 +158,12 @@ void xf_keyboard_key_release(xfContext* xfc, BYTE keycode, KeySym keysym)
 {
 	if (keycode < 8)
 		return;
+
+	// handle modmapped right control
+	if (keysym == XK_Control_R)
+	{
+		keycode = XKeysymToKeycode(xfc->display, keysym);
+	}
 
 	xfc->KeyboardState[keycode] = FALSE;
 	xf_keyboard_handle_special_keys_release(xfc, keysym);
