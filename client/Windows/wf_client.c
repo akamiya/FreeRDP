@@ -783,7 +783,7 @@ static int freerdp_client_focus_out(wfContext* wfc)
 	return 0;
 }
 
-static int freerdp_client_set_window_size(wfContext* wfc, int width, int height)
+int freerdp_client_set_window_size(wfContext* wfc, int width, int height)
 {
 	WLog_DBG(TAG,  "freerdp_client_set_window_size %d, %d", width, height);
 
@@ -823,7 +823,7 @@ void wf_size_scrollbars(wfContext* wfc, UINT32 client_width,
 	{
 		SCROLLINFO si;
 		BOOL horiz = wfc->xScrollVisible;
-		BOOL vert = wfc->yScrollVisible;;
+		BOOL vert = wfc->yScrollVisible;
 
 		if (!horiz && client_width < wfc->context.settings->DesktopWidth)
 		{

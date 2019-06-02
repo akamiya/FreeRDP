@@ -233,6 +233,7 @@ DWORD WINAPI mac_client_thread(void* param)
 		}
 
 	disconnect:
+		[view setIs_connected:0];
 		freerdp_disconnect(instance);
 
 		if (settings->AsyncInput && inputThread)
@@ -408,9 +409,6 @@ DWORD WINAPI mac_client_thread(void* param)
 	if (!self.is_connected)
 		return;
 
-	NSPoint loc = [event locationInWindow];
-	int x = (int) loc.x;
-	int y = (int) loc.y;
 	float dx = [event deltaX];
 	float dy = [event deltaY];
 	/* 1 event = 120 units */
@@ -418,7 +416,7 @@ DWORD WINAPI mac_client_thread(void* param)
 
 	if (fabsf(dy) > FLT_EPSILON)
 	{
-		flags = PTR_FLAGS_WHEEL;
+		flags = PTR_FLAGS_HWHEEL;
 		units = fabsf(dy) * 120;
 
 		if (dy < 0)
@@ -426,7 +424,7 @@ DWORD WINAPI mac_client_thread(void* param)
 	}
 	else if (fabsf(dx) > FLT_EPSILON)
 	{
-		flags = PTR_FLAGS_HWHEEL;
+		flags = PTR_FLAGS_WHEEL;
 		units = fabsf(dx) * 120;
 
 		if (dx > 0)
@@ -794,6 +792,9 @@ DWORD fixKeyCode(DWORD keyCode, unichar keyChar, enum APPLE_KEYBOARD_TYPE type)
 
 - (void)resume
 {
+	if (!self.is_connected)
+		return;
+
 	dispatch_async(dispatch_get_main_queue(), ^
 	{
 		self->pasteboard_timer = [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(onPasteboardTimerFired:) userInfo:nil repeats:YES];
@@ -930,8 +931,15 @@ BOOL mac_post_connect(freerdp* instance)
 
 void mac_post_disconnect(freerdp*	instance)
 {
+	mfContext* mfc;
+	MRDPView* view;
 	if (!instance || !instance->context)
 		return;
+
+	mfc = (mfContext*) instance->context;
+	view = (MRDPView*) mfc->view;
+
+	[view pause];
 
 	PubSub_UnsubscribeChannelConnected(instance->context->pubSub, mac_OnChannelConnectedEventHandler);
 	PubSub_UnsubscribeChannelDisconnected(instance->context->pubSub,

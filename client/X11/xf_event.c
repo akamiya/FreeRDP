@@ -213,7 +213,7 @@ static BOOL xf_event_execute_action_script(xfContext* xfc, XEvent* event)
 	char buffer[1024] = { 0 };
 	char command[1024] = { 0 };
 
-	if (!xfc->actionScriptExists || !xfc->xevents)
+	if (!xfc->actionScriptExists || !xfc->xevents || !xfc->window)
 		return FALSE;
 
 	if (event->type > LASTEvent)
@@ -298,14 +298,13 @@ static BOOL xf_event_Expose(xfContext* xfc, XEvent* event, BOOL app)
 		h = event->xexpose.height;
 	}
 
-	if (xfc->context.gdi->gfx)
-	{
-		xf_OutputExpose(xfc, x, y, w, h);
-		return TRUE;
-	}
-
 	if (!app)
 	{
+		if (xfc->context.gdi->gfx)
+		{
+			xf_OutputExpose(xfc, x, y, w, h);
+			return TRUE;
+		}
 		xf_draw_screen(xfc, x, y, w, h);
 	}
 	else
@@ -323,6 +322,7 @@ static BOOL xf_event_Expose(xfContext* xfc, XEvent* event, BOOL app)
 }
 static BOOL xf_event_VisibilityNotify(xfContext* xfc, XEvent* event, BOOL app)
 {
+	WINPR_UNUSED(app);
 	xfc->unobscured = event->xvisibility.state == VisibilityUnobscured;
 	return TRUE;
 }
@@ -463,6 +463,7 @@ static BOOL xf_event_KeyPress(xfContext* xfc, XEvent* event, BOOL app)
 {
 	KeySym keysym;
 	char str[256];
+	WINPR_UNUSED(app);
 	XLookupString((XKeyEvent*) event, str, sizeof(str), &keysym, NULL);
 	xf_keyboard_key_press(xfc, event->xkey.keycode, keysym);
 	return TRUE;
@@ -471,6 +472,7 @@ static BOOL xf_event_KeyRelease(xfContext* xfc, XEvent* event, BOOL app)
 {
 	KeySym keysym;
 	char str[256];
+	WINPR_UNUSED(app);
 	XLookupString((XKeyEvent*) event, str, sizeof(str), &keysym, NULL);
 	xf_keyboard_key_release(xfc, event->xkey.keycode, keysym);
 	return TRUE;
@@ -483,8 +485,13 @@ static BOOL xf_event_FocusIn(xfContext* xfc, XEvent* event, BOOL app)
 	xfc->focused = TRUE;
 
 	if (xfc->mouse_active && !app)
+	{
+		if (!xfc->window)
+			return FALSE;
+
 		XGrabKeyboard(xfc->display, xfc->window->handle, TRUE, GrabModeAsync,
 		              GrabModeAsync, CurrentTime);
+	}
 
 	if (app)
 	{
@@ -522,6 +529,8 @@ static BOOL xf_event_FocusOut(xfContext* xfc, XEvent* event, BOOL app)
 }
 static BOOL xf_event_MappingNotify(xfContext* xfc, XEvent* event, BOOL app)
 {
+	WINPR_UNUSED(app);
+
 	if (event->xmapping.request == MappingModifier)
 	{
 		if (xfc->modifierMap)
@@ -562,6 +571,9 @@ static BOOL xf_event_EnterNotify(xfContext* xfc, XEvent* event, BOOL app)
 {
 	if (!app)
 	{
+		if (!xfc->window)
+			return FALSE;
+
 		xfc->mouse_active = TRUE;
 
 		if (xfc->fullscreen)
@@ -589,6 +601,8 @@ static BOOL xf_event_EnterNotify(xfContext* xfc, XEvent* event, BOOL app)
 }
 static BOOL xf_event_LeaveNotify(xfContext* xfc, XEvent* event, BOOL app)
 {
+	WINPR_UNUSED(event);
+
 	if (!app)
 	{
 		xfc->mouse_active = FALSE;
@@ -601,10 +615,14 @@ static BOOL xf_event_ConfigureNotify(xfContext* xfc, XEvent* event, BOOL app)
 {
 	Window childWindow;
 	xfAppWindow* appWindow;
-	rdpSettings* settings = xfc->context.settings;
+	rdpSettings* settings;
+	settings = xfc->context.settings;
 
 	if (!app)
 	{
+		if (!xfc->window)
+			return FALSE;
+
 		if (xfc->window->left != event->xconfigure.x)
 			xfc->window->left = event->xconfigure.x;
 
@@ -701,7 +719,7 @@ static BOOL xf_event_MapNotify(xfContext* xfc, XEvent* event, BOOL app)
 			 * Doing this here would inhibit the ability to restore a maximized window
 			 * that is minimized back to the maximized state
 			 */
-			//xf_rail_send_client_system_command(xfc, appWindow->windowId, SC_RESTORE);
+			xf_rail_send_client_system_command(xfc, appWindow->windowId, SC_RESTORE);
 			appWindow->is_mapped = TRUE;
 		}
 	}
@@ -739,7 +757,7 @@ static BOOL xf_event_PropertyNotify(xfContext* xfc, XEvent* event, BOOL app)
 	    (((Atom) event->xproperty.atom == xfc->WM_STATE)
 	     && (event->xproperty.state != PropertyDelete)))
 	{
-		int i;
+		unsigned long i;
 		BOOL status;
 		BOOL maxVert = FALSE;
 		BOOL maxHorz = FALSE;
@@ -913,6 +931,7 @@ static BOOL xf_event_suppress_events(xfContext* xfc, xfAppWindow* appWindow,
 
 	return FALSE;
 }
+
 BOOL xf_event_process(freerdp* instance, XEvent* event)
 {
 	BOOL status = TRUE;

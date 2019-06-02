@@ -51,6 +51,10 @@ endif()
 include(CheckCmakeCompat)
 
 # Include cmake modules
+if(WITH_CLANG_FORMAT)
+	include(ClangFormat)
+endif()
+
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CheckSymbolExists)
@@ -482,7 +486,7 @@ if(WIN32)
 	add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
 
 	set(CMAKE_USE_RELATIVE_PATH ON)
-    if (${CMAKE_GENERATOR} MATCHES "NMake Makefile*" OR ${CMAKE_GENERATOR} MATCHES "Ninja*")
+	if (${CMAKE_GENERATOR} MATCHES "NMake Makefile*" OR ${CMAKE_GENERATOR} MATCHES "Ninja*" OR ${CMAKE_GENERATOR} MATCHES "Unix Makefiles")
 		set(CMAKE_PDB_BINARY_DIR ${CMAKE_BINARY_DIR})
 	elseif (${CMAKE_GENERATOR} MATCHES "Visual Studio*")
 		set(CMAKE_PDB_BINARY_DIR "${CMAKE_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}")
@@ -870,6 +874,10 @@ find_feature(soxr ${SOXR_FEATURE_TYPE} ${SOXR_FEATURE_PURPOSE} ${SOXR_FEATURE_DE
 
 find_feature(GSSAPI ${GSSAPI_FEATURE_TYPE} ${GSSAPI_FEATURE_PURPOSE} ${GSSAPI_FEATURE_DESCRIPTION})
 
+if (WITH_OPENH264 AND NOT WITH_OPENH264_LOADING)
+	set(WITH_OPENH264_LOADING OFF)
+endif (WITH_OPENH264 AND NOT WITH_OPENH264_LOADING)
+
 if ((WITH_FFMPEG OR WITH_DSP_FFMPEG) AND NOT FFMPEG_FOUND)
 	message(FATAL_ERROR "FFMPEG support requested but not detected")
 endif()
@@ -934,6 +942,7 @@ endif()
 if(OPENSSL_FOUND)
 	add_definitions("-DWITH_OPENSSL")
 	message(STATUS "Using OpenSSL Version: ${OPENSSL_VERSION}")
+	include_directories(${OPENSSL_INCLUDE_DIR})
 endif()
 
 if(MBEDTLS_FOUND)

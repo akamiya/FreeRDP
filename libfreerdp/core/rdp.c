@@ -361,10 +361,10 @@ BOOL rdp_read_header(rdpRdp* rdp, wStream* s, UINT16* length, UINT16* channelId)
 
 	MCSPDU = domainMCSPDU;
 
-	if (*length < 8)
+	if (*length < 8U)
 		return FALSE;
 
-	if ((*length - 8) > Stream_GetRemainingLength(s))
+	if ((*length - 8U) > Stream_GetRemainingLength(s))
 		return FALSE;
 
 	if (MCSPDU == DomainMCSPDU_DisconnectProviderUltimatum)
@@ -765,6 +765,10 @@ static BOOL rdp_recv_server_status_info_pdu(rdpRdp* rdp, wStream* s)
 		return FALSE;
 
 	Stream_Read_UINT32(s, statusCode); /* statusCode (4 bytes) */
+
+	if (rdp->update->ServerStatusInfo)
+		return rdp->update->ServerStatusInfo(rdp->context, statusCode);
+
 	return TRUE;
 }
 
@@ -1521,7 +1525,7 @@ int rdp_recv_callback(rdpTransport* transport, wStream* s, void* extra)
 				ActivatedEventArgs activatedEvent;
 				rdpContext* context = rdp->context;
 				rdp_client_transition_to_state(rdp, CONNECTION_STATE_ACTIVE);
-				EventArgsInit(&activatedEvent, "xfreerdp");
+				EventArgsInit(&activatedEvent, "libfreerdp");
 				activatedEvent.firstActivation = !rdp->deactivation_reactivation;
 				PubSub_OnActivated(context->pubSub, context, &activatedEvent);
 				return 2;

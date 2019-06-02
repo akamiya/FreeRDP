@@ -135,6 +135,7 @@ option(WITH_DEBUG_RINGBUFFER "Enable Ringbuffer debug messages" ${DEFAULT_DEBUG_
 
 option(WITH_DEBUG_SYMBOLS "Pack debug symbols to installer" OFF)
 option(WITH_CCACHE "Use ccache support if available" ON)
+option(WITH_CLANG_FORMAT "Detect clang-format. run 'cmake --build . --target clangformat' to format." ON)
 option(WITH_ICU "Use ICU for unicode conversion" OFF)
 option(WITH_GSSAPI "Compile support for kerberos authentication. (EXPERIMENTAL)" OFF)
 
@@ -145,11 +146,14 @@ endif(WITH_FFMPEG)
 
 option(USE_VERSION_FROM_GIT_TAG "Extract FreeRDP version from git tag." OFF)
 
-if(ANDROID)
-include(ConfigOptionsAndroid)
+option(WITH_CAIRO    "Use CAIRO image library for screen resizing" OFF)
+option(WITH_SWSCALE  "Use SWScale image library for screen resizing" OFF)
+
+if (ANDROID)
+	include(ConfigOptionsAndroid)
 endif(ANDROID)
 
-if(IOS)
-include(ConfigOptionsiOS)
+if (IOS)
+	include(ConfigOptionsiOS)
 endif(IOS)
 

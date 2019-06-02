@@ -199,6 +199,9 @@ typedef int (*pSendChannelData)(freerdp* instance, UINT16 channelId, BYTE* data,
 typedef int (*pReceiveChannelData)(freerdp* instance, UINT16 channelId,
                                    BYTE* data, int size, int flags, int totalSize);
 
+typedef BOOL (*pPresentGatewayMessage)(freerdp* instance, UINT32 type, BOOL isDisplayMandatory,
+                                       BOOL isConsentMandatory, size_t length, const WCHAR* message);
+
 /**
  * Defines the context for a given instance of RDP connection.
  * It is embedded in the rdp_freerdp structure, and allocated by a call to freerdp_context_new().
@@ -372,7 +375,11 @@ struct rdp_freerdp
 									 Callback for gateway authentication.
 									 It is used to get the username/password when it was not provided at connection time. */
 
-	UINT64 paddingD[64 - 57]; /* 57 */
+	ALIGN64 pPresentGatewayMessage PresentGatewayMessage;/**< (offset 57)
+									 Callback for gateway consent messages.
+									 It is used to present consent messages to the user. */
+
+	UINT64 paddingD[64 - 58]; /* 58 */
 
 	ALIGN64 pSendChannelData SendChannelData; /* (offset 64)
 										 Callback for sending data to a channel.
@@ -446,6 +453,7 @@ FREERDP_API int freerdp_message_queue_process_pending_messages(
 
 FREERDP_API UINT32 freerdp_error_info(freerdp* instance);
 FREERDP_API void freerdp_set_error_info(rdpRdp* rdp, UINT32 error);
+FREERDP_API BOOL freerdp_send_error_info(rdpRdp* rdp);
 
 FREERDP_API void freerdp_get_version(int* major, int* minor, int* revision);
 FREERDP_API const char* freerdp_get_version_string(void);
@@ -472,6 +480,9 @@ FREERDP_API const char* freerdp_get_logon_error_info_data(UINT32 data);
 FREERDP_API ULONG freerdp_get_transport_sent(rdpContext* context,
         BOOL resetCount);
 
+FREERDP_API BOOL freerdp_nla_impersonate(rdpContext* context);
+FREERDP_API BOOL freerdp_nla_revert_to_self(rdpContext* context);
+
 FREERDP_API void clearChannelError(rdpContext* context);
 FREERDP_API HANDLE getChannelErrorEventHandle(rdpContext* context);
 FREERDP_API UINT getChannelError(rdpContext* context);
@@ -479,6 +490,8 @@ FREERDP_API const char* getChannelErrorDescription(rdpContext* context);
 FREERDP_API void setChannelError(rdpContext* context, UINT errorNum,
                                  char* description);
 FREERDP_API BOOL checkChannelErrorEvent(rdpContext* context);
+
+FREERDP_API const char* freerdp_nego_get_routing_token(rdpContext* context, DWORD* length);
 
 #ifdef __cplusplus
 }

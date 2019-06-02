@@ -482,7 +482,7 @@ static int bio_rdp_tls_free(BIO* bio)
 
 static long bio_rdp_tls_callback_ctrl(BIO* bio, int cmd, bio_info_cb* fp)
 {
-	int status = 0;
+	long status = 0;
 	BIO_RDP_TLS* tls;
 
 	if (!bio)
@@ -496,8 +496,15 @@ static long bio_rdp_tls_callback_ctrl(BIO* bio, int cmd, bio_info_cb* fp)
 	switch (cmd)
 	{
 		case BIO_CTRL_SET_CALLBACK:
-			SSL_set_info_callback(tls->ssl, (void (*)(const SSL*, int, int)) fp);
-			status = 1;
+			{
+				typedef void (*fkt_t)(const SSL*, int, int);
+				/* Documented since https://www.openssl.org/docs/man1.1.1/man3/BIO_set_callback.html
+				 * the argument is not really of type bio_info_cb* and must be cast
+				 * to the required type */
+				fkt_t fkt = (fkt_t)(void*)fp;
+				SSL_set_info_callback(tls->ssl, fkt);
+				status = 1;
+			}
 			break;
 
 		default:
@@ -1058,6 +1065,7 @@ BOOL tls_send_alert(rdpTls* tls)
 		if (tls->ssl->s3->wbuf.left == 0)
 			tls->ssl->method->ssl_dispatch_alert(tls->ssl);
 	}
+
 #endif
 	return TRUE;
 }
@@ -1221,7 +1229,7 @@ static BOOL tls_extract_pem(CryptoCert cert, BYTE** PublicKey, DWORD* PublicKeyL
 	BIO* bio;
 	int status;
 	size_t offset;
-	int length = 0;
+	size_t length = 0;
 	BOOL rc = FALSE;
 	BYTE* pemCert = NULL;
 
@@ -1267,7 +1275,7 @@ static BOOL tls_extract_pem(CryptoCert cert, BYTE** PublicKey, DWORD* PublicKeyL
 		goto fail;
 	}
 
-	offset += status;
+	offset += (size_t)status;
 
 	while (offset >= length)
 	{
@@ -1447,6 +1455,11 @@ int tls_verify_certificate(rdpTls* tls, CryptoCert cert, const char* hostname,
 					WLog_INFO(TAG, "No certificate stored, automatically accepting.");
 					accept_certificate = 1;
 				}
+				else if (tls->settings->AutoDenyCertificate)
+				{
+					WLog_INFO(TAG, "No certificate stored, automatically denying.");
+					accept_certificate = 0;
+				}
 				else if (instance->VerifyX509Certificate)
 				{
 					int rc = instance->VerifyX509Certificate(instance, pemCert, length, hostname,
@@ -1491,7 +1504,12 @@ int tls_verify_certificate(rdpTls* tls, CryptoCert cert, const char* hostname,
 					WLog_WARN(TAG, "Failed to get certificate entry for %s:%d",
 					          hostname, port);
 
-				if (instance->VerifyX509Certificate)
+				if (tls->settings->AutoDenyCertificate)
+				{
+					WLog_INFO(TAG, "No certificate stored, automatically denying.");
+					accept_certificate = 0;
+				}
+				else if (instance->VerifyX509Certificate)
 				{
 					const int rc = instance->VerifyX509Certificate(instance, pemCert, length, hostname,
 					               port, flags | VERIFY_CERT_FLAG_CHANGED);

@@ -104,6 +104,7 @@ client/Sample/sfreerdp
 client/Wayland/wlfreerdp
 server/Sample/sfreerdp-server
 server/X11/xfreerdp-server
+server/proxy/freerdp-proxy
 xcode
 libfreerdp/codec/test/TestOpenH264ASM
 
@@ -131,7 +132,7 @@ TAGS
 # generated packages
 *.zip
 *.exe
-*.sh
+#*.sh
 *.deb
 *.rpm
 *.dmg
@@ -139,7 +140,7 @@ TAGS
 *.tar.gz
 
 # packaging related files
-!packaging/scripts/prepare_deb_freerdp-nightly.sh
+!packaging/**.sh
 packaging/deb/freerdp-nightly/freerdp-nightly
 packaging/deb/freerdp-nightly/freerdp-nightly-dev
 packaging/deb/freerdp-nightly/freerdp-nightly-dbg
@@ -150,3 +151,4 @@ packaging/deb/freerdp-nightly/freerdp-nightly-dbg
 
 # VisualStudio Code
 .vscode
+cache/
