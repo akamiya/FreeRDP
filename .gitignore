@@ -40,6 +40,13 @@ buildflags.h
 *.cproject
 *.settings
 
+# Code
+*.code-workspace
+
+# flatpak
+.flatpak-builder/
+/flatpak/
+
 nbproject/
 compile_commands.json
 
